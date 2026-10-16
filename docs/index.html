@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>港 minato — ポートの台帳</title>
+<meta name="description" content="localhost のポートを、どのプロジェクトのどの開発サーバーかで一覧し、重複を警告して空きポートを提案する CLI。依存ゼロ。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚓</text></svg>">
+<style>
+:root {
+  --bg: #f4f1ea; --fg: #1d2430; --muted: #5f6878; --line: #d8d2c4; --accent: #0f5c7a;
+  --term-bg: #0f1720; --term-fg: #d7dee8; --red: #ff7b72; --yellow: #e3b341; --green: #7ee787; --dim: #7d8590;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0d1218; --fg: #e3e8ef; --muted: #96a0ae; --line: #253040; --accent: #5cb8d6; --term-bg: #060a0e; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.8 "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 56px 16px 80px; }
+h1 { font-size: clamp(40px, 9vw, 72px); line-height: 1; margin: 0 0 8px; letter-spacing: .02em; }
+h1 small { font-size: .32em; color: var(--muted); font-weight: 500; margin-left: .4em; letter-spacing: .08em; }
+.lead { font-size: 19px; margin: 18px 0 28px; }
+h2 { font-size: 20px; margin: 56px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+a { color: var(--accent); }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 36px; }
+.cta a { padding: 8px 16px; border: 1px solid var(--accent); border-radius: 6px; text-decoration: none; font-weight: 600; }
+.cta a.primary { background: var(--accent); color: var(--bg); }
+pre { background: var(--term-bg); color: var(--term-fg); padding: 18px 20px; border-radius: 10px; overflow-x: auto;
+  font: 13px/1.6 ui-monospace, "SF Mono", Menlo, monospace; margin: 0; }
+pre .r { color: var(--red); } pre .y { color: var(--yellow); } pre .g { color: var(--green); } pre .d { color: var(--dim); } pre .b { font-weight: 700; }
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .92em; }
+p code, li code, td code { background: color-mix(in srgb, var(--line) 55%, transparent); padding: 1px 5px; border-radius: 4px; }
+ul { padding-left: 1.2em; } li { margin: 6px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+footer { margin-top: 64px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>港 <small>minato</small></h1>
+  <p class="lead">localhost のポートを、<strong>どのプロジェクトのどの開発サーバーか</strong>で一覧する CLI。<br>
+  設定ファイルからポートの台帳を作り、別のアプリが同じ番号を宣言していたら知らせ、空いている番号を提案する。依存ゼロ。</p>
+  <div class="cta">
+    <a class="primary" href="https://github.com/Jinshin2534/minato">GitHub</a>
+    <a href="#use">つかいかた</a>
+  </div>
+
+  <pre><span class="d">$</span> minato conflicts
+<span class="r b">⚠ 衝突 5 件</span> — 同じポートを別のアプリが宣言している
+  <span class="r">5380</span>
+    - maai               ~/ranzo_project/maai/vite.config.js:4
+    - sora-shirabe       ~/ranzo_project/sora-shirabe/package.json:7
+  <span class="r">5410</span>
+    - kemuri-ate         ~/ranzo_project/kemuri-ate/vite.config.js:4<span class="d">  strictPort なし→黙ってずれる</span>
+    - kemuri-so          ~/ranzo_project/kemuri-so/vite.config.js:4<span class="d">  strictPort なし→黙ってずれる</span>
+  <span class="r">5730</span>
+    - denpa-scope        ~/ranzo_project/denpa-scope/server.js:12<span class="d">  既定値</span>
+    - sokomi             ~/ranzo_project/sokomi/vite.config.js:4
+
+<span class="d">$</span> minato suggest --next
+<span class="g">5970</span>
+<span class="d">範囲 5000-5999・10 刻み。台帳の番号、strictPort なしの宣言の +1〜+2、5000/7000(AirPlay)、5173/4173(Vite 既定)を避けた
+127.0.0.1 と :: で実際に bind できることを確かめた</span></pre>
+
+  <h2>なぜ</h2>
+  <p>アプリを何十本も作っていると、ポート番号はいつのまにか重なる。実際、手元の 130 あまりのプロジェクトを走査したら 5 か所で重複していた。
+  片方が <code>strictPort</code> なしだと Vite は黙って次の番号にずれるので、気づかないまま「開いたら別のアプリだった」が起きる。
+  港は、各リポジトリの <code>vite.config</code>・<code>package.json</code>・<code>.env</code>・サーバーのコードから台帳を作り、<code>lsof</code> で今の待ち受けと突き合わせる。</p>
+
+  <h2 id="use">つかいかた</h2>
+  <pre>git clone https://github.com/Jinshin2534/minato && cd minato && npm link
+
+minato                    <span class="d"># 台帳 + 稼働状況 + 衝突 + 空き候補</span>
+minato conflicts          <span class="d"># 衝突だけ(あれば終了コード 1)</span>
+minato suggest            <span class="d"># 空いているポートを3つ(bind して確かめる)</span>
+minato suggest --next     <span class="d"># いちばん大きい番号の次の区切り</span>
+minato who 5173           <span class="d"># 宣言しているアプリと、いま使っているプロセス</span>
+minato live --all         <span class="d"># いま待ち受けているポート</span>
+
+<span class="d"># 走査するフォルダ(既定 ~/ranzo_project:~/orca/workspaces)</span>
+MINATO_ROOTS=~/code:~/work minato</pre>
+
+  <h2>何を拾うか</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>場所</th><th>例</th><th>確度</th></tr>
+    <tr><td><code>vite.config.*</code></td><td><code>server: { port: 5410 }</code>・<code>preview</code>・<code>strictPort</code></td><td>宣言</td></tr>
+    <tr><td><code>package.json</code> の scripts</td><td><code>vite --port 5380</code>・<code>-p 3020</code>・<code>PORT=3030</code></td><td>宣言</td></tr>
+    <tr><td><code>.env</code></td><td><code>PORT=3000</code>・<code>API_PORT=8080</code></td><td>宣言</td></tr>
+    <tr><td>サーバーのコード</td><td><code>process.env.PORT ?? 5460</code></td><td>既定値</td></tr>
+    <tr><td>同上</td><td><code>.listen(4000)</code></td><td>推定</td></tr>
+    <tr><td>どこにも書いていない Vite アプリ</td><td>—</td><td>暗黙(5173)</td></tr>
+  </table>
+  </div>
+
+  <h2>正直さのための作り</h2>
+  <ul>
+    <li><strong>測れないときは測れないと言う。</strong> <code>lsof</code> が無い・走査対象が見つからないときに、空の結果で「衝突なし」「全部空き」とは言わない。</li>
+    <li><strong>lsof は自分のプロセスしか見えないことがある。</strong> だから提案する番号は実際に bind して確かめ、できなかった番号は理由つきで外す。</li>
+    <li><strong>同じアプリの別ワークツリーは衝突にしない。</strong> 同じ git リポジトリかつ同じ package 名なら同じアプリ。</li>
+    <li><strong>確度を隠さない。</strong> 設定に書かれた宣言・環境変数の既定値・コードからの推定・Vite 既定(暗黙)を分けて見せる。暗黙どうしは衝突に数えず、別枠で注意する。</li>
+    <li>どの宣言も <code>ファイル:行</code> で示すので、その場で直せる。</li>
+  </ul>
+
+  <h2>しくみ</h2>
+  <ul>
+    <li>Node だけで動く(実行時の依存ゼロ)。設定ファイルは実行せずに文字列として読み、中かっこの入れ子を数えて <code>port</code> が <code>server</code>・<code>preview</code>・<code>hmr</code> のどこにあるかを決める。</li>
+    <li><code>lsof +c 0 -nP -iTCP -sTCP:LISTEN -Fpcn</code> の機械向け出力を読む。プロセスの所属は <code>cwd</code> とコマンドライン中のパスで決める。</li>
+    <li>台帳づくり・衝突検出・lsof の読み取りは純粋関数で、Vitest 100 件で固めている。</li>
+  </ul>
+
+  <footer>港 minato · MIT · <a href="https://github.com/Jinshin2534/minato">github.com/Jinshin2534/minato</a></footer>
+</main>
+</body>
+</html>

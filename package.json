@@ -1,0 +1,15 @@
+{
+  "name": "minato",
+  "version": "0.1.0",
+  "description": "localhost のポートを、どのプロジェクトのどの開発サーバーかで一覧し、衝突を警告して空きポートを提案する CLI",
+  "type": "module",
+  "bin": { "minato": "./bin/minato.js" },
+  "engines": { "node": ">=20" },
+  "files": ["bin", "src"],
+  "license": "MIT",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": { "vitest": "^3.2.4" }
+}
